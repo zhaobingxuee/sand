@@ -1,0 +1,17 @@
+.container{
+  .indexBcg{
+    background-image: linear-gradient(90deg, #fccfd3 1%, #f1d8fd 60%);
+    .indexUpper{
+      background-image: linear-gradient(rgba(0,0,0,0) 0%,#f8e9ff 10%,#f2f4fd 35%, #edf1fa 55%); 
+    }
+  }
+  .phoneBtnContiner{
+    position: absolute;
+    z-index: 999;
+    text-align: center;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+  }
+}

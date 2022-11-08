@@ -1,0 +1,37 @@
+.codeOuter{
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  input{
+    width: 55%;
+  }
+  /* From uiverse.io by @aasisodiya */
+button {
+  background-color: white;
+  border: none;
+  /* padding: 1rem; */
+  font-size: 0.8rem;
+  width: 8.1em;
+  border-radius: 1rem;
+  color: lightcoral;
+  box-shadow: 0 0.4rem #dfd9d9;
+  cursor: pointer;
+ }
+ 
+//  button:active {
+//   color: white;
+//   box-shadow: 0 0.2rem #dfd9d9;
+//   transform: translateY(0.2rem);
+//  }
+ 
+//  button:hover:not(:disabled) {
+//   background: lightcoral;
+//   color: white;
+//   text-shadow: 0 0.1rem #bcb4b4;
+//  }
+ 
+//  button:disabled {
+//   cursor: auto;
+//   color: grey;
+//  }
+}

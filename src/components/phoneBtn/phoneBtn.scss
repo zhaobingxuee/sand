@@ -1,0 +1,44 @@
+.phoneBtn{
+  border-radius: 100%;
+  width: 73px; 
+  height: 73px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  margin: 0 auto;
+}
+.selectItems{
+  width: 60%;
+  background-color: white;
+  margin: 0 auto;
+  text-align: center;
+  border-radius: 18px;
+  padding: 20px;
+  h4{
+    margin: 0px;
+  }
+  .types{
+    padding: 10px 0;
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    .type{
+      color: #6c6c6c;
+      border: solid 1px #6b6b6b;
+      display: inline-block;
+      padding: 4px;
+    }
+    .typeSelect{
+      color: #58AEE0;
+      border: solid 1px #65c3f9;
+      display: inline-block;
+      padding: 4px;
+    }
+  }
+  .selectFoot{
+    position: relative;
+    right: 0px;
+  }
+}

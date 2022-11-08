@@ -1,0 +1,15 @@
+.popContainer{
+  background-color: #5c5b5b;
+  color: white;
+  font-size: 14px;
+  text-align: center;
+  position: fixed;
+  z-index: 3;
+  top: 50%;
+  display: inline-block;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  padding: 8px 20px;
+  border-radius: 20px;
+  transition: 0.5s;
+}
