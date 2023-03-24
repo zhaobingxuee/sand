@@ -5,6 +5,9 @@ import Register from '../../views/register/Register'
 import ForgotPassword from '../../views/forgotPassword/ForgotPassword'
 import Circle from '../circle/Circle'
 import circle1 from '../../../public/img/circleA.png'
+import circle2 from '../../../public/img/circleC.png'
+
+
 import bcg from '../../../public/img/loginBcg.png'
 import './LoginResisterConteiner.scss'
 
@@ -14,7 +17,18 @@ const LoginResisterConteiner = () => {
       <div className='bcg' style={{backgroundImage:`url(${bcg})`,backgroundRepeat:'no-repeat',backgroundSize: 'cover'}}>
         {/* <div className='upper'></div> */}
         {/* <Circle></Circle> */}
-        <img src={circle1}/>
+        <div className='circleContainer'>
+          <div className='nameCircle'>
+            <p>Sand</p>
+            <img src={circle1}/>
+          </div>
+          <div className='inPageName'>
+            <p>登录</p>
+            <img src={circle2}/>
+          </div>
+
+
+        </div>
         <div className='mainOuter'>
           <Switch>
             <Route exact path="/home/login" component={Login}></Route>

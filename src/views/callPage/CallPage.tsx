@@ -36,7 +36,8 @@ interface OtherData {
 }
 
 const CallPage = (props: PropsWithChildren<Props>) => {
-  const [isWaiting, setIsWaiting] = useState<boolean>(true); //判断当前是否为等待状态
+  const [isWaiting, setIsWaiting] = useState<boolean>(true); //判断当前是否时等待状态
+  const [onlyAudio, setOnlyAudio] = useState<boolean>(true); //判断两个人是否只打开了语音通话
   let [typeId, setTypeId] = useState("");
   let [mySocketID, setMySocketID] = useState<string>();
   let [otherId, setOtherId] = useState<string>();
@@ -46,13 +47,16 @@ const CallPage = (props: PropsWithChildren<Props>) => {
   const { windowWidth, windowHeight } = useWindowSize();
   const [localId, setLocalId] = useState(""); //本地Peerid
   const [remoteId, setRemoteId] = useState(""); //对方的Peerid
-  const [audioOpen, setAudioOpen] = useState<boolean>(false); //设置自己的音频是否打开
-  const [videoOpen, setVideoOpen] = useState<boolean>(true); //设置自己的视频是否打开
+  const [audioOpen, setAudioOpen] = useState<boolean>(true); //设置自己的音频是否打开
+  const [videoOpen, setVideoOpen] = useState<boolean>(false); //设置自己的视频是否打开 因为这里涉及到媒体流始终不变 只能更改音频和视频能都使用 所以最初要全部打开 当页面挂载的时候关掉视频可见
+  const [elseVideoOpen, setElseVideoOpen] = useState<boolean>(false); //设置对方的视频是否打开
   const currentCall: any = useRef();
   const currentConnection = useRef();
   const peer = useRef<Peer>();
   const localVideo = useRef<HTMLVideoElement>(null);
   const remoteVideo = useRef<HTMLVideoElement>(null);
+  const copyLocalVideo = useRef<HTMLVideoElement>(null);
+
   const localStream = useRef<MediaStream>();
   const remoteStream = useRef<MediaStream>();
   const [socket, setSocket] = useState<Socket>();
@@ -90,14 +94,10 @@ const CallPage = (props: PropsWithChildren<Props>) => {
         //当检测到有人进入这个房间 就要开始找数据库里面该房间下正在等待通话的人
         getRoomWaiting();
       });
-      // _socket.on('changeStream',(data)=>{
-      //   console.log(data)
-      // })
     }
     //当远程用户id有值之后要开始建立通话连接了
     if (remoteId) {
       console.log(remoteId, localId);
-      setIsWaiting(false);
       callUser();
     }
   }, [typeId, localId, remoteId]);
@@ -182,6 +182,7 @@ const CallPage = (props: PropsWithChildren<Props>) => {
   // 结束通话
   function endCall() {
     console.log("卸载");
+    socketRef.current!.removeAllListeners()
     if (peer.current) {
       // currentCall.current.close()
       axios({
@@ -200,7 +201,6 @@ const CallPage = (props: PropsWithChildren<Props>) => {
       peer.current.destroy();
 
       window.location.replace("/#/index");
-      // setIsWaiting(true);
     }
     Object.getOwnPropertyDescriptor(window, "stream")
       ?.value.getTracks()
@@ -270,10 +270,12 @@ const CallPage = (props: PropsWithChildren<Props>) => {
     peer.current.on("call", async (call: any) => {
       // 获取本地流
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: videoOpen,
-        audio: audioOpen,
+        video: true,
+        audio: true,
       });
       localStream.current = stream;
+      localStream.current!.getVideoTracks()[0].enabled = false;
+      setVideoOpen(false);
       if (!window.hasOwnProperty("stream")) {
         Object.defineProperty(window, "stream", {
           value: stream,
@@ -281,16 +283,29 @@ const CallPage = (props: PropsWithChildren<Props>) => {
         });
       }
       localVideo.current!.srcObject = stream;
+      copyLocalVideo.current!.srcObject = stream;
       // 响应
       call.answer(stream);
 
       // 监听视频流，并更新到 remoteVideo 上
       call.on("stream", (stream: any) => {
+        //当远端流添加到媒体流列表中 触发当前事件
+        //初始状态下双方一定要关掉视频
+        setElseVideoOpen(false);
         socketRef.current!.on("closeVideo", (data) => {
-          console.log(data, "关闭了视频");
+          let myVideoOpen = JSON.parse(data)[1]
+          //当对方关闭了视频 如果此时自己也是关闭视频
+          if (myVideoOpen) {
+            setOnlyAudio(false);
+          } else {
+            setOnlyAudio(true);
+          }
+          //当对方关闭视频 要把自己的视频代替对方画面
+          setElseVideoOpen(false);
         });
         socketRef.current!.on("openVideo", (data) => {
-          console.log(data, "打开了视频");
+          setElseVideoOpen(true);
+          setOnlyAudio(false); //双方有一个人打开视频
         });
         remoteVideo.current!.srcObject = stream;
       });
@@ -304,10 +319,12 @@ const CallPage = (props: PropsWithChildren<Props>) => {
 
   // 开始通话
   const callUser = async () => {
+    setIsWaiting(false);
+
     // 获取本地视频流
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: videoOpen,
-      audio: audioOpen,
+      video: true,
+      audio: true,
     });
 
     if (!window.hasOwnProperty("stream")) {
@@ -319,12 +336,14 @@ const CallPage = (props: PropsWithChildren<Props>) => {
 
     localVideo.current!.srcObject = stream;
     localVideo.current!.play();
-
+    copyLocalVideo.current!.srcObject = stream;
+    copyLocalVideo.current!.play();
     // 数据传输
     const connection = peer.current!.connect(remoteId) as any;
     currentConnection.current = connection;
     connection.on("open", () => {
       console.log("已连接");
+      //当处于非等待状态时 要根据是否开始视频 语音改页面
       //连接上之后要修改通话state
       axios({
         url: "http://localhost:8080/changeState",
@@ -360,20 +379,29 @@ const CallPage = (props: PropsWithChildren<Props>) => {
   const handleVideo = () => {
     localStream.current!.getVideoTracks()[0].enabled =
       !localStream.current!.getVideoTracks()[0].enabled;
-    setVideoOpen(!videoOpen);
-    socketRef.current!.emit(videoOpen ? "openVideo" : "closeVideo", socket!.id);
+    if (videoOpen) {
+      //要关闭自己的视频 同时要判断一下对方是否打开了视频 决定两个人是不是只语音
+      //在触发关闭自己的视频的时候 要把对方有没有关视频状态传过去 因为监听对方视频状态要获取本人的视频状态 只会获取到初始值
+      socketRef.current!.emit("closeVideo", JSON.stringify([socket!.id, elseVideoOpen]));
+      if (elseVideoOpen) {
+        setOnlyAudio(false);
+      } else {
+        setOnlyAudio(true);
+      }
+      setVideoOpen(false);
+    } else {
+      //要打开自己的视频
+      socketRef.current!.emit("openVideo", socket!.id);
+      setOnlyAudio(false);
+      setVideoOpen(true);
+    }
   };
 
-  const audioHandle = () => {
-    if (audioOpen) {
-      //关闭麦克风
-      setAudioOpen(false);
-      socket!.emit("closeAudio", socket!.id);
-    } else {
-      //打开麦克风
-      setAudioOpen(true);
-      socket!.emit("openAudio", socket!.id);
-    }
+  const handleAudio = () => {
+    localStream.current!.getAudioTracks()[0].enabled =
+      !localStream.current!.getAudioTracks()[0].enabled;
+
+    setAudioOpen(!audioOpen);
   };
 
   const stopDrag = (e: any, data: any) => {
@@ -383,7 +411,6 @@ const CallPage = (props: PropsWithChildren<Props>) => {
     const containHeight = Number(
       window.getComputedStyle(e.target).height.split("p")[0]
     );
-
     //获取当前元素距离四个边的距离
     const leftWidth = (data.x / windowWidth) * 100; //左边距离百分比
     const rightWidth =
@@ -426,76 +453,92 @@ const CallPage = (props: PropsWithChildren<Props>) => {
         className="bottomVideo"
         style={{ backgroundImage: `url(${callPageBcg})` }}
       >
-        <video autoPlay ref={remoteVideo}>
-          对方视频流
-        </video>
+        <div style={{ display: onlyAudio ? "none" : "inline-block" }}>
+          <video
+            autoPlay
+            ref={remoteVideo}
+            style={{ display: elseVideoOpen ? "inline-block" : "none" }}
+          ></video>
+          <video
+            muted={true}
+            autoPlay
+            ref={copyLocalVideo}
+            style={{ display: !elseVideoOpen ? "inline-block" : "none" }}
+          ></video>
+        </div>
       </div>
+
       <div className="mainOption">
-        {isWaiting ? (
-          <div style={{ flex: 1 }}>
-            <div className="avator">
-              <div>标签名字</div>
-            </div>
-            <div className="promptText">
-              {isWaiting ? "正在等待中..." : "正在通话中..."}
-            </div>
-          </div>
-        ) : (
-          <div style={{ width: "100%", height: "100%" }}>
-            <Draggable
-              bounds={"parent"}
-              // defaultPosition={{x:200,y:200}}
-              position={{ x: transX, y: transY }}
-              onStop={(e, data) => {
-                stopDrag(e, data);
+        {/* 当不处于等待状态或者目前只处于语音通话状态时 显示头像 */}
+        <div
+          className="avator"
+          style={{ display: isWaiting || onlyAudio ? "inline-block" : "none" }}
+        >
+          <div>标签名字</div>
+        </div>
+        <div
+          className="promptText"
+          style={{ display: isWaiting ? "inline-block" : "none" }}
+        >
+          正在等待中...
+        </div>
+        <Draggable
+          bounds={"parent"}
+          // defaultPosition={{x:200,y:200}}
+          position={{ x: transX, y: transY }}
+          onStop={(e, data) => {
+            stopDrag(e, data);
+          }}
+        >
+          <div className="elseVideoContainer">
+            <video
+              muted={true}
+              style={{
+                width: "100%",
+                display: videoOpen && elseVideoOpen ? "inline-block" : "none",
               }}
-            >
-              <div className="elseVideoContainer">
-                <video
-                  style={{
-                    width: "100%",
-                    display: videoOpen ? "inline-block" : "none",
-                  }}
-                  autoPlay
-                  ref={localVideo}
-                ></video>
+              autoPlay
+              ref={localVideo}
+            ></video>
+          </div>
+        </Draggable>
+        <div className="mainBottom">
+          <div style={{ display: isWaiting ? "none" : "inline-block" }}>
+            通话时间
+          </div>
+          <div className="optionBtns">
+            <div className="callBtn">
+              <div
+                className="btnContainer audioBtn"
+                onClick={() => {
+                  handleAudio();
+                }}
+              >
+                {/* 是否打开语音 */}
+                {audioOpen ? <TbMicrophone /> : <TbMicrophoneOff />}
               </div>
-            </Draggable>
-          </div>
-        )}
-        <div className="optionBtns">
-          <div className="callBtn">
-            <div
-              className="btnContainer audioBtn"
-              onClick={() => {
-                // setAudioOpen(!audioOpen);
-                audioHandle();
-              }}
-            >
-              {/* 是否打开语音 */}
-              {audioOpen ? <TbMicrophone /> : <TbMicrophoneOff />}
             </div>
-          </div>
-          <div className="callBtn">
-            <div
-              className="btnContainer closeBtn"
-              onClick={() => {
-                endCall();
-              }}
-            >
-              {/* 挂断电话 */}
-              <BsTelephoneX />
+            <div className="callBtn">
+              <div
+                className="btnContainer closeBtn"
+                onClick={() => {
+                  endCall();
+                }}
+              >
+                {/* 挂断电话 */}
+                <BsTelephoneX />
+              </div>
             </div>
-          </div>
-          <div className="callBtn">
-            <div
-              className="btnContainer videoBtn"
-              onClick={() => {
-                handleVideo();
-              }}
-            >
-              {/* 是否打开视频 */}
-              {videoOpen ? <BsCameraVideo /> : <BsCameraVideoOff />}
+            <div className="callBtn">
+              <div
+                className="btnContainer videoBtn"
+                onClick={() => {
+                  handleVideo();
+                }}
+              >
+                {/* 是否打开视频 */}
+                {videoOpen ? <BsCameraVideo /> : <BsCameraVideoOff />}
+              </div>
             </div>
           </div>
         </div>

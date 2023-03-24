@@ -108,7 +108,9 @@ function Login(){
         {/* <button className="button" onClick={()=>{debounced()}}> 登 录 </button> */}
         <button className="button" onClick={()=>{loginFunc(phone,password)}}> 登 录</button>
       </div>
-      <NavLink to="/home/register" className='toregister'>没有账号？点击注册</NavLink>
+      <div className='bottomContainer'>
+        <NavLink to="/home/register" className='toregister'>没有账号？点击注册</NavLink>
+      </div>
     </div>
   )
 }

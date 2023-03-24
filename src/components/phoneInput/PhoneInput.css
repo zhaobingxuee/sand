@@ -13,7 +13,7 @@
   border-radius: 8px;
   outline: none;
   color: #0d0c22;
-  background-color: #fff;
+  background-color: rgba(0,0,0,.025);
   transition: .3s ease;
  }
  

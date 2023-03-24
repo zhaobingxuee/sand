@@ -38,7 +38,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-around;
     video{
       width: 100%;
     }
@@ -76,34 +76,44 @@
       color: white;
       font-size: 14px;
       text-align: center;
+      width: 100%;
     }
-    .optionBtns{
-      // margin-bottom: 50px;
+    .mainBottom{
       position: absolute;
       bottom: 50px;
-      color: white;
-      display: flex;
-      height: 60px;
       width: 100%;
-      .callBtn{
-        flex: 1;
+      &>div{
         text-align: center;
-        .btnContainer{
-          margin: 0 auto;
-          background-color: #3F3E39;
-          border-radius: 21%;
-          width: 60px;
-          height: 100%;
-          text-align: center;
-          font-size: 27px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-        }
+        width: 100%;
+        margin: 10px 0;
+        color: white;
+        font-size: 13px;
       }
-      .closeBtn{
-        background-color: #FF3250 !important;
+      .optionBtns{
+        // margin-bottom: 50px;
+        color: white;
+        display: flex;
+        height: 60px;
+        .callBtn{
+          flex: 1;
+          text-align: center;
+          .btnContainer{
+            margin: 0 auto;
+            background-color: #3F3E39;
+            border-radius: 21%;
+            width: 60px;
+            height: 100%;
+            text-align: center;
+            font-size: 27px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+          }
+        }
+        .closeBtn{
+          background-color: #FF3250 !important;
+        }
       }
     }
   }
